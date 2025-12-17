@@ -23,7 +23,7 @@ import {
     ChevronDown
 } from 'lucide-react';
 import { Tooltip } from './Tooltip';
-import { editImageQwen, uploadToGradio } from '../services/hfService';
+import { editImageQwen } from '../services/hfService';
 import { editImageGitee } from '../services/giteeService';
 import { editImageMS } from '../services/msService';
 import { ProviderOption } from '../types';
@@ -37,10 +37,6 @@ interface ImageEditorProps {
 }
 
 type ToolType = 'select' | 'move' | 'brush' | 'eraser' | 'rect';
-
-interface ImageLoadOptions {
-  timeout?: number;
-}
 
 export const ImageEditor: React.FC<ImageEditorProps> = ({ t, provider, setProvider, onOpenSettings }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -662,25 +658,60 @@ export const ImageEditor: React.FC<ImageEditorProps> = ({ t, provider, setProvid
                 result = await editImageQwen(imageBlobs, finalPrompt, normalizedWidth, normalizedHeight);
             }
 
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
             if (provider === 'modelscope') {
                 const link = document.createElement('a');
                 link.href = result.url;
+                if (isMobile) link.target = '_blank';
                 link.download = `edited_image_${Date.now()}.png`;
                 link.click();
-
-                handleExit();
             } else {
                 const response = await fetch(result.url)
                 if (!response.ok) {
                     throw new Error(`Failed to fetch generated image from ${result.url}: ${response.statusText}`);
                 }
                 const blob = await response.blob()
-                const imgFile = new File([blob], "edited_image.png", { type: "image/png" });
+                const fileName = `edited_image_${Date.now()}.png`
 
-                handleExit();
-                processFile(imgFile);
+                if (isMobile) {
+                    const file = new File([blob], fileName, { type: blob.type });
+                    
+                    const nav = navigator as any;
+                    const canShare = nav.canShare && nav.canShare({ files: [file] });
+
+                    if (canShare) {
+                        try {
+                            await nav.share({
+                                files: [file],
+                                title: 'Peinture AI Asset',
+                            });
+                            return; // Success, shared
+                        } catch (e: any) {
+                            if (e.name !== 'AbortError') console.warn("Share failed", e);
+                            if (e.name === 'AbortError') {
+                                return; // User cancelled
+                            }
+                            // If share failed (not cancelled), fall through to anchor method
+                        }
+                    }
+                }
+
+                // 4. Desktop/Fallback Strategy: Anchor Download
+                const blobUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                if (isMobile) link.target = '_blank';
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Cleanup
+                setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
             }
             
+            handleExit();
             setIsGenerating(false);
         } catch (e: any) {
             console.error(e);

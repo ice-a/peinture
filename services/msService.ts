@@ -231,8 +231,8 @@ export const editImageMS = async (
   prompt: string,
   width?: number,
   height?: number,
-  steps: number = 8,
-  guidanceScale: number = 2
+  steps: number = 16,
+  guidanceScale: number = 4
 ): Promise<GeneratedImage> => {
   // 1. Upload images to Gradio space to get public URLs. 
   // Per requirements: no token used for upload, anonymous access.

@@ -689,7 +689,7 @@ export default function App() {
       }
 
       // 3. Mobile Strategy: Web Share API (Primary for iOS/Mobile)
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
       if (isMobile) {
           const file = new File([blob], fileName, { type: blob.type });
@@ -720,6 +720,7 @@ export default function App() {
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
+      if (isMobile) link.target = '_blank';
       link.download = fileName;
       document.body.appendChild(link);
       link.click();

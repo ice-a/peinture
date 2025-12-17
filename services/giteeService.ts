@@ -228,8 +228,8 @@ export const editImageGitee = async (
   prompt: string,
   width?: number,
   height?: number,
-  steps: number = 8,
-  guidanceScale: number = 2
+  steps: number = 16,
+  guidanceScale: number = 4
 ): Promise<GeneratedImage> => {
   return runWithGiteeTokenRetry(async (token) => {
     try {
